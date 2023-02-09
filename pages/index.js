@@ -1,11 +1,17 @@
 import Head from 'next/head'
-import Image from 'next/image'
 import { Inter } from '@next/font/google'
-import styles from '@/styles/Home.module.css'
+import {getFeaturedProducts, getProducts} from "@/utils/wooCommerceApi";
+import Link from "next/link";
+import {useDispatch, useSelector} from "react-redux";
+import {addToCart} from "@/store/cartSlice";
 
 const inter = Inter({ subsets: ['latin'] })
 
-export default function Home() {
+export default function Home(props) {
+    const {products} = props;
+    const selector = useSelector(state => state.cart.in);
+    const dispatch = useDispatch();
+
   return (
     <>
       <Head>
@@ -14,110 +20,81 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
+      <main>
+          {/* boostrap hero banner */}
+          <div className="container-fluid" style={{
+              backgroundImage:'url(/laptop_12.jpg)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                height: '500px',
+                width: '100%',
+          }}>
+            <div className="container h-100">
+                <div className="row h-100 justify-content-start align-items-center">
+                    <div className="col-6">
+                        <h1>Hero Banner</h1>
+                        <button className={"btn btn-danger px-3"}>Shop Now</button>
+                    </div>
+                </div>
+            </div>
           </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+            <div className="container mt-5">
+                <div className="row">
+                    <div className="col-12">
+                        <h1>Featured Product</h1>
+                        <hr/>
+                        <div className="row">
+                            { products.map( product => (
+                                <div className="col-12 col-md-4">
+                                    <div className="card mb-3 mb-md-0">
+                                        <img style={{maxHeight:'300px',objectFit:"cover"}} src={product.images[0].src} className="card-img-top" alt="..."/>
+                                        <div className="card-body">
+                                            <h5 className="card-title">{product.name}</h5>
+                                            <Link
+                                                href={`shop/${product.slug}/`}
+                                            >
+                                                <div className="btn btn-primary">voir le produit</div>
+                                            </Link>
+                                            <div className="btn btn-danger ms-1" onClick={() => {
+                                                dispatch(addToCart({
+                                                    id: product.id,
+                                                    name: product.name,
+                                                    price: product.price,
+                                                    image: product.images[0].src,
+                                                    quantity: 1,
+                                                }))
+                                                console.log(selector)
+                                            }}><i className="fa-solid fa-circle-plus"></i></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
       </main>
     </>
   )
+}
+
+// get product
+export async function getStaticProps() {
+    const products = await getFeaturedProducts().catch((err) => {
+        console.log(err)
+    } )
+
+    if(!products) {
+        return {
+            notFound: true,
+        }
+    }
+
+    return {
+        props: {
+            products: products.data,
+        },
+    }
 }
